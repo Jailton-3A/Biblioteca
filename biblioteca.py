@@ -1,3 +1,6 @@
+import streamlit as st
+st.write('Olá mundo')
+
 autores = []
 livros = []
 alunos = []
