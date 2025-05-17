@@ -1,10 +1,15 @@
-import streamlit as st
-st.write('Olá mundo')
+import json
 
-autores = []
-livros = []
-alunos = []
-emprestimos = []
+database = {
+    "autores": [],
+    "livros" : [],
+    "alunos" : [],
+    "emprestimos" : []
+}
+
+def salvarAlunosEmJSON(nome_arquivo="database.json", entidade = []):
+    with open(nome_arquivo, "w", encoding="utf-8") as f:
+        json.dump(entidade, f, ensure_ascii=False, indent=4)
 
 def cadastroAutor():
     autor = {
@@ -12,20 +17,23 @@ def cadastroAutor():
         "nome": input("Digite o nome do autor "),
         "dataDeNascimento" : input("Digite a data de nascimento do autor ")
     }
-    while any(au["id"] == autor["id"] for au in autores):
+    while any(au["id"] == autor["id"] for au in database["autores"]):
         autor["id"] = int(input("ID já utilizado! Digite outro ID "))
-    autores.append(autor)
+    database["autores"].append(autor)
 
-def cadastroAlunos():
+def cadastroAlunos(id,name,dataDeNascimento,email):
     aluno = {
-        "id": int(input("Digite o id do aluno ")),
-        "nome": input("Digite o nome do aluno "),
-        "dataDeNascimento" : input("Digite a data de nascimento do aluno "),
-        "email" : input("Digite o email do aluno ")
-    }
-    while any(a["id"] == aluno["id"] for a in alunos):
-        aluno["id"] = int(input("ID já utilizado! Digite outro ID "))
-    alunos.append(aluno)
+         "id":  int(id),
+         "nome": name,
+         "dataDeNascimento" : dataDeNascimento,
+         "email" : email
+     }
+    while any(a["id"] == aluno["id"] for a in database["alunos"]):
+        # aluno["id"] = int(input("ID já utilizado! Digite outro ID "))
+        return False
+    database["alunos"].append(aluno)
+    salvarAlunosEmJSON(entidade=database)
+    return True
 
 def adicionarLivro():
     livro = {
@@ -37,10 +45,10 @@ def adicionarLivro():
         "dataAtualizacao": input("Digite a data de atualização do livro: ")
     }
 
-    while any(l["id"] == livro["id"] for l in livros):
+    while any(l["id"] == livro["id"] for l in database["livros"]):
         livro["id"] = int(input("ID já utilizado! Digite outro ID: "))
 
-    autores_encontrados = [a for a in autores if a["nome"].lower() == livro["autor"].lower()]
+    autores_encontrados = [a for a in database["autores"] if a["nome"].lower() == database["livros"]["autor"].lower()]
 
     if len(autores_encontrados) == 0:
         print(" Autor não encontrado! Cadastre o autor primeiro.\n")
@@ -62,18 +70,18 @@ def adicionarLivro():
         livro["autor_id"] = autores_encontrados[0]["id"]
         print(f" Autor {livro['autor']} encontrado!")
 
-    livros.append(livro)
+    database["livros"].append(livro)
     print(f" Livro '{livro['titulo']}' cadastrado com sucesso!\n")
 
 def emprestarLivro():
     aluno_id = int(input("Digite o ID do aluno que está pegando o livro emprestado: "))
-    aluno = next((a for a in alunos if a["id"] == aluno_id), None)
+    aluno = next((a for a in database["alunos"] if a["id"] == aluno_id), None)
     if not aluno:
         print("Aluno não encontrado!")
         return
 
     livro_id = int(input("Digite o ID do livro que será emprestado: "))
-    livro = next((l for l in livros if l["id"] == livro_id), None)
+    livro = next((l for l in database["livros"] if l["id"] == livro_id), None)
     if not livro:
         print("Livro não encontrado!")
         return
@@ -89,13 +97,13 @@ def emprestarLivro():
         "dataDevolucao": None,
         "devolvido": False
     }
-    emprestimos.append(emprestimo)
+    database["emprestimos"].append(emprestimo)
     livro["disponivel"] = False
     print(f"Livro '{livro['titulo']}' emprestado para {aluno['nome']}.")
 
 def devolverLivro():
     livro_id = int(input("Digite o ID do livro a ser devolvido: "))
-    emprestimo = next((e for e in emprestimos if e["livro_id"] == livro_id and not e["devolvido"]), None)
+    emprestimo = next((e for e in database["emprestimos"] if e["livro_id"] == livro_id and not e["devolvido"]), None)
     
     if not emprestimo:
         print("Nenhum empréstimo ativo encontrado para este livro.")
@@ -104,7 +112,7 @@ def devolverLivro():
     emprestimo["dataDevolucao"] = input("Digite a data da devolução: ")
     emprestimo["devolvido"] = True
 
-    for livro in livros:
+    for livro in database["livros"]:
         if livro["id"] == livro_id:
             livro["disponivel"] = True
             break
@@ -113,19 +121,20 @@ def devolverLivro():
 
 def listarEmprestimosAtivos():
     print("\n--- Empréstimos Ativos ---")
-    ativos = [e for e in emprestimos if not e["devolvido"]]
+    ativos = [e for e in database["emprestimos"] if not e["devolvido"]]
 
     if not ativos:
         print("Nenhum empréstimo ativo no momento.")
         return
 
     for e in ativos:
-        aluno = next((a for a in alunos if a["id"] == e["aluno_id"]), {"nome": "Desconhecido"})
-        livro = next((l for l in livros if l["id"] == e["livro_id"]), {"titulo": "Desconhecido"})
+        aluno = next((a for a in database["alunos"] if a["id"] == e["aluno_id"]), {"nome": "Desconhecido"})
+        livro = next((l for l in database["livros"] if l["id"] == e["livro_id"]), {"titulo": "Desconhecido"})
         
         print(f"Aluno: {aluno['nome']} | Livro: {livro['titulo']} | Data do Empréstimo: {e['dataEmprestimo']}")
 
-while True:
+
+while False:
     print("\n1 - Cadastrar Autor")
     print("2 - Adicionar Livro")
     print("3 - Cadastrar Aluno")
